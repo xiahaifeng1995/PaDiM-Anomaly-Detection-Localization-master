@@ -3,7 +3,7 @@ This is an implementation of the paper [PaDiM: a Patch Distribution Modeling Fra
 
 This code is heavily borrowed from both SPADE-pytorch(https://github.com/byungjae89/SPADE-pytorch) and MahalanobisAD-pytorch(https://github.com/byungjae89/MahalanobisAD-pytorch) projects
 <p align="center">
-    <img src="imgs/pic1.png" width="600"\>
+    <img src="imgs/pic1.png" width="1000"\>
 </p>
 
 ## Requirement
@@ -70,13 +70,13 @@ MVTec AD datasets : Download from [MVTec website](https://www.mvtec.com/company/
 * ResNet18
 
 <p align="center">
-    <img src="imgs/roc_curve_r18.png" width="600"\>
+    <img src="imgs/roc_curve_r18.png" width="1000"\>
 </p>
 
 * Wide_ResNet50_2
 
 <p align="center">
-    <img src="imgs/roc_curve_wr50.png" width="600"\>
+    <img src="imgs/roc_curve_wr50.png" width="1000"\>
 </p>
 
 ### Localization examples
