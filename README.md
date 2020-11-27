@@ -19,7 +19,7 @@ MVTec AD datasets : Download from [MVTec website](https://www.mvtec.com/company/
 
 ## Results
 ### Implementation results on MVTec
-* Image-level anomaly detection accuracy (ROCAUC %)
+* Image-level anomaly detection accuracy (ROCAUC)
 
 |MvTec|R18-Rd100|WR50-Rd550|
 |:---:|:---:|:---:|
@@ -42,7 +42,7 @@ MVTec AD datasets : Download from [MVTec website](https://www.mvtec.com/company/
 |All object classes|0.876|0.941 |
 |All classes| 0.905|0.955 |
 
-* Pixel-level anomaly detection accuracy (ROCAUC %)
+* Pixel-level anomaly detection accuracy (ROCAUC)
 
 |MvTec|R18-Rd100|WR50-Rd550|
 |:---:|:---:|:---:|
