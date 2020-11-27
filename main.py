@@ -25,18 +25,13 @@ import datasets.mvtec as mvtec
 # device setup
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
-random.seed(10)
-torch.manual_seed(10)
-if use_cuda:
-    torch.cuda.manual_seed_all(10)
-
-idx = torch.tensor(sample(range(0, 448), 100))
 
 
 def parse_args():
     parser = argparse.ArgumentParser('PaDiM')
     parser.add_argument("--data_path", type=str, default="D:/dataset/mvtec_anomaly_detection")
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
+    parser.add_argument("--arch", type=str, choices=['resnet18, wide_resnet50_2'], default='wide_resnet50_2')
     return parser.parse_args()
 
 
@@ -45,10 +40,23 @@ def main():
     args = parse_args()
 
     # load model
-    # model = wide_resnet50_2(pretrained=True, progress=True)
-    model = resnet18(pretrained=True, progress=True)
+    if args.arch == 'resnet18':
+        model = resnet18(pretrained=True, progress=True)
+        t_d = 448
+        d = 100
+    elif args.arch == 'wide_resnet50_2':
+        model = wide_resnet50_2(pretrained=True, progress=True)
+        t_d = 1792
+        d = 550
     model.to(device)
     model.eval()
+    random.seed(1024)
+    torch.manual_seed(1024)
+    if use_cuda:
+        torch.cuda.manual_seed_all(1024)
+
+    idx = torch.tensor(sample(range(0, t_d), d))
+
     # set model's intermediate outputs
     outputs = []
 
@@ -59,7 +67,7 @@ def main():
     model.layer2[-1].register_forward_hook(hook)
     model.layer3[-1].register_forward_hook(hook)
 
-    os.makedirs(os.path.join(args.save_path, 'temp'), exist_ok=True)
+    os.makedirs(os.path.join(args.save_path, 'temp_%s' % args.arch), exist_ok=True)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     fig_img_rocauc = ax[0]
     fig_pixel_rocauc = ax[1]
@@ -78,7 +86,7 @@ def main():
         test_outputs = OrderedDict([('layer1', []), ('layer2', []), ('layer3', [])])
 
         # extract train set features
-        train_feature_filepath = os.path.join(args.save_path, 'temp', 'train_%s.pkl' % class_name)
+        train_feature_filepath = os.path.join(args.save_path, 'temp_%s' % args.arch, 'train_%s.pkl' % class_name)
         if not os.path.exists(train_feature_filepath):
             for (x, _, _) in tqdm(train_dataloader, '| feature extraction | train | %s |' % class_name):
                 # model prediction
@@ -104,8 +112,10 @@ def main():
             embedding_vectors = embedding_vectors.view(B, C, H * W)
             mean = torch.mean(embedding_vectors, dim=0).numpy()
             cov = torch.zeros(C, C, H * W).numpy()
+            I = np.identity(C)
             for i in range(H * W):
-                cov[:, :, i] = LedoitWolf().fit(embedding_vectors[:, :, i].numpy()).covariance_ + 0.001
+                # cov[:, :, i] = LedoitWolf().fit(embedding_vectors[:, :, i].numpy()).covariance_
+                cov[:, :, i] = np.cov(embedding_vectors[:, :, i].numpy(), rowvar=False) + 0.01 * I
             # save learned distribution
             train_outputs = [mean, cov]
             with open(train_feature_filepath, 'wb') as f:
@@ -134,6 +144,7 @@ def main():
             outputs = []
         for k, v in test_outputs.items():
             test_outputs[k] = torch.cat(v, 0)
+        
         # Embedding concat
         embedding_vectors = test_outputs['layer1']
         for layer_name in ['layer2', 'layer3']:
@@ -141,6 +152,7 @@ def main():
 
         # randomly select 100 dimension
         embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
+        
         # calculate distance matrix
         B, C, H, W = embedding_vectors.size()
         embedding_vectors = embedding_vectors.view(B, C, H * W).detach().numpy()
@@ -157,13 +169,16 @@ def main():
         dist_list = torch.tensor(dist_list)
         score_map = F.interpolate(dist_list.unsqueeze(1), size=x.size(2), mode='bilinear',
                                   align_corners=False).squeeze().numpy()
+        
         # apply gaussian smoothing on the score map
         for i in range(score_map.shape[0]):
             score_map[i] = gaussian_filter(score_map[i], sigma=4)
+        
         # Normalization
         max_score = score_map.max()
         min_score = score_map.min()
         scores = (score_map - min_score) / (max_score - min_score)
+        
         # calculate image-level ROC AUC score
         img_scores = scores.reshape(scores.shape[0], -1).max(axis=1)
         gt_list = np.asarray(gt_list)
@@ -172,6 +187,7 @@ def main():
         total_roc_auc.append(img_roc_auc)
         print('image ROCAUC: %.3f' % (img_roc_auc))
         fig_img_rocauc.plot(fpr, tpr, label='%s img_ROCAUC: %.3f' % (class_name, img_roc_auc))
+        
         # get optimal threshold
         gt_mask = np.asarray(gt_mask_list)
         precision, recall, thresholds = precision_recall_curve(gt_mask.flatten(), scores.flatten())
@@ -187,8 +203,9 @@ def main():
         print('pixel ROCAUC: %.3f' % (per_pixel_rocauc))
 
         fig_pixel_rocauc.plot(fpr, tpr, label='%s ROCAUC: %.3f' % (class_name, per_pixel_rocauc))
-
-        plot_fig(args, test_imgs, scores, gt_mask_list, threshold, args.save_path, class_name)
+        save_dir = args.save_path + '/' + f'pictures_{args.arch}'
+        os.makedirs(save_dir, exist_ok=True)
+        plot_fig(test_imgs, scores, gt_mask_list, threshold, save_dir, class_name)
 
     print('Average ROCAUC: %.3f' % np.mean(total_roc_auc))
     fig_img_rocauc.title.set_text('Average image ROCAUC: %.3f' % np.mean(total_roc_auc))
@@ -202,7 +219,7 @@ def main():
     fig.savefig(os.path.join(args.save_path, 'roc_curve.png'), dpi=100)
 
 
-def plot_fig(args, test_img, scores, gts, threshold, save_dir, class_name):
+def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
     num = len(scores)
     vmax = scores.max() * 255.
     vmin = scores.min() * 255.
@@ -260,6 +277,7 @@ def denormalization(x):
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     x = (((x.transpose(1, 2, 0) * std) + mean) * 255.).astype(np.uint8)
+    
     return x
 
 
