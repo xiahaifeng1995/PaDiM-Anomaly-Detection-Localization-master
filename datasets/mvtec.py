@@ -17,7 +17,7 @@ CLASS_NAMES = ['bottle', 'cable', 'capsule', 'carpet', 'grid',
 
 class MVTecDataset(Dataset):
     def __init__(self, dataset_path='D:/dataset/mvtec_anomaly_detection', class_name='bottle', is_train=True,
-                 resize=256, cropsize=256):
+                 resize=256, cropsize=224):
         assert class_name in CLASS_NAMES, 'class_name: {}, should be in {}'.format(class_name, CLASS_NAMES)
         self.dataset_path = dataset_path
         self.class_name = class_name
