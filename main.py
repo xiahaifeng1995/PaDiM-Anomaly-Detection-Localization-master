@@ -16,12 +16,14 @@ from skimage import morphology
 from skimage.segmentation import mark_boundaries
 import matplotlib.pyplot as plt
 import matplotlib
+
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision.models import wide_resnet50_2, resnet18
-
 import datasets.mvtec as mvtec
+
+
 # device setup
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -105,7 +107,7 @@ def main():
             for layer_name in ['layer2', 'layer3']:
                 embedding_vectors = embedding_concat(embedding_vectors, train_outputs[layer_name])
 
-            # randomly select 100 dimension
+            # randomly select d dimension
             embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
             # calculate multivariate Gaussian distribution
             B, C, H, W = embedding_vectors.size()
@@ -150,7 +152,7 @@ def main():
         for layer_name in ['layer2', 'layer3']:
             embedding_vectors = embedding_concat(embedding_vectors, test_outputs[layer_name])
 
-        # randomly select 100 dimension
+        # randomly select d dimension
         embedding_vectors = torch.index_select(embedding_vectors, 1, idx)
         
         # calculate distance matrix
