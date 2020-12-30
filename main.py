@@ -33,7 +33,7 @@ def parse_args():
     parser = argparse.ArgumentParser('PaDiM')
     parser.add_argument("--data_path", type=str, default="D:/dataset/mvtec_anomaly_detection")
     parser.add_argument("--save_path", type=str, default="./mvtec_result")
-    parser.add_argument("--arch", type=str, choices=['resnet18, wide_resnet50_2'], default='wide_resnet50_2')
+    parser.add_argument("--arch", type=str, choices=['resnet18', 'wide_resnet50_2'], default='wide_resnet50_2')
     return parser.parse_args()
 
 
