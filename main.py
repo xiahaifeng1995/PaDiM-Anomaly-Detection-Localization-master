@@ -223,8 +223,9 @@ def main():
 
 def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
     num = len(scores)
-    vmax = scores.max() * 255.
-    vmin = scores.min() * 255.
+    vmax = 255.
+    vmin = 0.
+    norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
     for i in range(num):
         img = test_img[i]
         img = denormalization(img)
@@ -239,7 +240,6 @@ def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
         vis_img = mark_boundaries(img, mask, color=(1, 0, 0), mode='thick')
         fig_img, ax_img = plt.subplots(1, 5, figsize=(12, 3))
         fig_img.subplots_adjust(right=0.9)
-        norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
         for ax_i in ax_img:
             ax_i.axes.xaxis.set_visible(False)
             ax_i.axes.yaxis.set_visible(False)
@@ -247,9 +247,8 @@ def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
         ax_img[0].title.set_text('Image')
         ax_img[1].imshow(gt, cmap='gray')
         ax_img[1].title.set_text('GroundTruth')
-        ax = ax_img[2].imshow(heat_map, cmap='jet', norm=norm)
         ax_img[2].imshow(img, cmap='gray', interpolation='none')
-        ax_img[2].imshow(heat_map, cmap='jet', alpha=0.5, interpolation='none')
+        ax = ax_img[2].imshow(heat_map, cmap='jet', alpha=0.5, interpolation='none', norm=norm)
         ax_img[2].title.set_text('Predicted heat map')
         ax_img[3].imshow(mask, cmap='gray')
         ax_img[3].title.set_text('Predicted mask')
