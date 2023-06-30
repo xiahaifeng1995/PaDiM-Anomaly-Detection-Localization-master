@@ -1,6 +1,6 @@
 import os
 # import tarfile
-from PIL import Image
+from PIL import Image, ImageOps
 from tqdm import tqdm
 # import urllib.request
 
@@ -10,9 +10,13 @@ from torchvision import transforms as T
 
 
 # URL = 'ftp://guest:GU.205dldo@ftp.softronics.ch/mvtec_anomaly_detection/mvtec_anomaly_detection.tar.xz'
-CLASS_NAMES = ['bottle', 'cable', 'capsule', 'carpet', 'grid',
+CLASS_NAMES = ['pcb']
+
+"""
+'carpet', 'grid','bottle', 'cable', 'capsule',
                'hazelnut', 'leather', 'metal_nut', 'pill', 'screw',
-               'tile', 'toothbrush', 'transistor', 'wood', 'zipper']
+               'tile', 'toothbrush', 'transistor', 'wood', 'zipper'
+"""
 
 
 class MVTecDataset(Dataset):
@@ -51,7 +55,10 @@ class MVTecDataset(Dataset):
         if y == 0:
             mask = torch.zeros([1, self.cropsize, self.cropsize])
         else:
+            # import pdb; pdb.set_trace()
             mask = Image.open(mask)
+            #TODO: Need to remove the below line after converting mask to binary
+            mask = ImageOps.grayscale(mask)
             mask = self.transform_mask(mask)
 
         return x, y, mask
